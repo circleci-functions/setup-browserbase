@@ -1,0 +1,7 @@
+{
+  "name": "setup-browserbase-acceptance",
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}
