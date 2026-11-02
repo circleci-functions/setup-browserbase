@@ -1,0 +1,82 @@
+version: "2"
+run:
+  build-tags:
+    - acceptance
+linters:
+  enable:
+    - depguard
+    - dogsled
+    - funlen
+    - gocyclo
+    - gosec
+    - misspell
+    - nakedret
+    - unconvert
+    - unparam
+  settings:
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: ^log$
+              desc: use log/slog instead
+            - pkg: gotest.tools/assert
+              desc: use gotest.tools/v3/assert instead
+            - pkg: gotest.tools/skip
+              desc: use gotest.tools/v3/skip instead
+    errcheck:
+      disable-default-exclusions: false
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+    gocyclo:
+      min-complexity: 15
+    nakedret:
+      max-func-lines: 0
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - gosec
+        text: G204
+      - linters:
+          - gosec
+        text: G104
+      - linters:
+          - gosec
+        text: ^G115(.*)$
+      - linters:
+          - errcheck
+        source: ^\s+defer .*\.(Close|Unsetenv|Remove)(.*)$
+      - linters:
+          - gosec
+        text: Deferring unsafe method "Close" on type(.*)$
+      - linters:
+          - funlen
+        text: ^Function 'Test.*'
+      - linters:
+          - funlen
+        text: Function 'Run'.*
+      - linters:
+          - gosec
+        path: _test\.go
+        text: ^G304(.*)$
+      - linters:
+          - gosec
+        path: _test\.go
+        text: ^G306(.*)$
+      - linters:
+          - gosec
+        path: _test\.go
+        text: ^G404(.*)$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/circleci-functions/setup-browserbase
+  exclusions:
+    generated: lax

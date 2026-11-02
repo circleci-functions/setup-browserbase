@@ -1,14 +1,71 @@
 version: 2.1
 
-jobs:
-  build:
+orbs:
+  toolkit: https://raw.githubusercontent.com/circleci-functions/toolkit/refs/heads/main/orbs/toolkit.yml
+
+executors:
+  go:
     docker:
       - image: cimg/go:1.26
+
+jobs:
+  test:
+    executor: go
     steps:
       - checkout
-      - run: go version
+      - restore_cache:
+          keys:
+            - setup-browserbase-go-{{ checksum "go.sum" }}-
+            - setup-browserbase-go-
+      - run: task lint
+      # A release is the only thing that runs `task publish`, so a missing task
+      # would otherwise surface at release time.
+      - run: task lint-tasks
+      - run: task test
+      - store_test_results:
+          path: test-results
+      - save_cache:
+          key: setup-browserbase-go-{{ checksum "go.sum" }}-{{ epoch }}
+          paths:
+            - ~/.cache/go-build
+            - ~/go/pkg/mod
+
+  # Cross-compiles setup-browserbase into ./dist, the way `publish` will.
+  build:
+    executor: go
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - setup-browserbase-go-{{ checksum "go.sum" }}-
+            - setup-browserbase-go-
+      - run: task dry-run
 
 workflows:
-  build:
+  test-publish:
     jobs:
+      - test
       - build
+      - toolkit/release-pr:
+          name: release-pr
+          executor: go
+          cache-prefix: setup-browserbase-go
+          # One at a time, so two pushes can't race to rewrite release/next.
+          serial-group: << pipeline.project.slug >>/release-pr
+          requires: &release-requires
+            - test
+            - build
+          context: [github-release]
+          filters:
+            branches:
+              only: main
+      - toolkit/publish:
+          name: publish
+          executor: go
+          cache-prefix: setup-browserbase-go
+          serial-group: << pipeline.project.slug >>/publish
+          requires: *release-requires
+          context: [functions-publisher, github-release]
+          filters:
+            branches:
+              only: main
