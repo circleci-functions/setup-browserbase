@@ -13,10 +13,9 @@ import (
 	"github.com/circleci-functions/toolkit/sdk"
 )
 
-type cli struct{}
-
-func (c *cli) Run(context.Context, *sdk.Client) error {
-	return nil
+type cli struct {
+	Smoke      smokeCmd      `cmd:"" default:"withargs" help:"Load pages on Browserbase and check their status, console and look. Runs when no command is given."`
+	Playwright playwrightCmd `cmd:"" help:"Run the project's Playwright tests on Browserbase sessions."`
 }
 
 func main() {

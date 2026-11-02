@@ -7,6 +7,62 @@ executors:
   go:
     docker:
       - image: cimg/go:1.26
+  # The acceptance tests need Chrome and Node.js.
+  go-browsers:
+    docker:
+      - image: cimg/go:1.26-browsers
+  # The smoke jobs run the packaged binary and suite, so they need Chrome and
+  # Node.js but no Go.
+  node:
+    docker:
+      - image: cimg/node:lts-browsers
+  macos:
+    macos:
+      xcode: "16.4.0"
+  windows:
+    machine:
+      image: windows-server-2022-gui:current
+      shell: bash.exe -eo pipefail
+    resource_class: windows.medium
+
+commands:
+  smoke:
+    description: >-
+      Run the packaged acceptance suite against the packaged setup-browserbase: the executor's Chrome, reached over CDP behind the suite's in-process fake Browserbase API, for smoke and a real Playwright suite. The executor needs Chrome and Node.js but no Go: test2json and gotestsum turn the suite's output into the JUnit CircleCI collects.
+    parameters:
+      platform:
+        type: string
+        description: The os/arch whose artifacts to run, e.g. linux/amd64.
+      ext:
+        type: string
+        default: ""
+        description: Executable suffix for the platform.
+    steps:
+      - run:
+          name: Install Chromium
+          # The executors ship no Chrome; Playwright's own build stands in for
+          # the browser a Browserbase session serves.
+          command: |
+            if [ "$(uname -s)" = Linux ]; then deps=--with-deps; fi
+            npx --yes playwright@1.64.1 install $deps chromium
+      - run:
+          name: Smoke-test and run Playwright on a CDP browser
+          command: |
+            node --version
+            mkdir -p test-results
+            ./dist/tools/<< parameters.platform >>/gotestsum<< parameters.ext >> \
+              --junitfile test-results/smoke.xml \
+              --format standard-verbose \
+              --raw-command -- \
+              ./dist/tools/<< parameters.platform >>/test2json<< parameters.ext >> \
+                -p acceptance \
+                ./dist/acceptance/<< parameters.platform >>/acceptance<< parameters.ext >> \
+                -test.v=test2json \
+                -test.run 'TestSmoke_PassesAndReports|TestSmoke_SendsTheVercelBypass|TestPlaywright_RunsTheSuiteOnBrowserbase'
+          environment:
+            SETUP_BROWSERBASE_BINARY: ./dist/setup-browserbase/<< parameters.platform >>/setup-browserbase<< parameters.ext >>
+      - store_test_results:
+          path: test-results
 
 jobs:
   test:
@@ -30,7 +86,9 @@ jobs:
             - ~/.cache/go-build
             - ~/go/pkg/mod
 
-  # Cross-compiles setup-browserbase into ./dist, the way `publish` will.
+  # Cross-compiles setup-browserbase into ./dist the way `publish` will, plus the
+  # acceptance suite and the tools to report it, and persists them so the
+  # smoke jobs exercise exactly what is about to ship.
   build:
     executor: go
     steps:
@@ -40,12 +98,65 @@ jobs:
             - setup-browserbase-go-{{ checksum "go.sum" }}-
             - setup-browserbase-go-
       - run: task dry-run
+      - run: task build-acceptance
+      - run: task build-tools
+      - persist_to_workspace:
+          root: .
+          paths:
+            - dist
+
+  # A real Chrome and a real Playwright suite against a fake Browserbase API.
+  acceptance:
+    executor: go-browsers
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - setup-browserbase-go-{{ checksum "go.sum" }}-
+            - setup-browserbase-go-
+      - run:
+          name: Run acceptance tests
+          command: task acceptance
+      - store_test_results:
+          path: test-results
+
+  smoke-linux:
+    executor: node
+    steps:
+      - attach_workspace:
+          at: .
+      - smoke:
+          platform: linux/amd64
+
+  smoke-macos:
+    executor: macos
+    steps:
+      - attach_workspace:
+          at: .
+      - smoke:
+          platform: darwin/arm64
+
+  smoke-windows:
+    executor: windows
+    steps:
+      - attach_workspace:
+          at: .
+      - smoke:
+          platform: windows/amd64
+          ext: ".exe"
 
 workflows:
   test-publish:
     jobs:
       - test
       - build
+      - acceptance
+      - smoke-linux:
+          requires: [build]
+      - smoke-macos:
+          requires: [build]
+      - smoke-windows:
+          requires: [build]
       - toolkit/release-pr:
           name: release-pr
           executor: go
@@ -54,7 +165,10 @@ workflows:
           serial-group: << pipeline.project.slug >>/release-pr
           requires: &release-requires
             - test
-            - build
+            - acceptance
+            - smoke-linux
+            - smoke-macos
+            - smoke-windows
           context: [github-release]
           filters:
             branches:

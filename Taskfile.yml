@@ -21,6 +21,46 @@ tasks:
     cmds:
       - go tool gotestsum --junitfile test-results/unit.xml -- ./...
 
+  acceptance:
+    desc: Run acceptance tests against a local Chrome behind a fake Browserbase API (needs Chrome, Node.js and npm)
+    cmds:
+      - go tool gotestsum --junitfile test-results/acceptance.xml --format standard-verbose -- -tags acceptance -timeout 20m ./acceptance/...
+
+  build-acceptance:
+    desc: Cross-compile the acceptance suite, so an executor with no Go can run it
+    cmds:
+      - |
+        set -eu
+        for platform in linux/amd64 darwin/arm64 windows/amd64; do
+          os="${platform%/*}"; arch="${platform#*/}"
+          out="dist/acceptance/$os/$arch/acceptance"
+          if [ "$os" = windows ]; then out="$out.exe"; fi
+          # CGO_ENABLED=0 so the binary is static: building linux/amd64 on a
+          # linux/amd64 host is not a cross-compile, so cgo would otherwise
+          # stay on and tie it to the builder's glibc.
+          CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go test -c -tags acceptance -o "$out" ./acceptance
+          echo "built $out"
+        done
+
+  build-tools:
+    desc: >-
+      Cross-compile test2json and gotestsum, so an executor with no Go can turn
+      the packaged suite's output into the JUnit XML CircleCI collects.
+    cmds:
+      - |
+        set -eu
+        for platform in linux/amd64 darwin/arm64 windows/amd64; do
+          os="${platform%/*}"; arch="${platform#*/}"
+          ext=""
+          if [ "$os" = windows ]; then ext=".exe"; fi
+          for tool in cmd/test2json gotest.tools/gotestsum; do
+            name="${tool##*/}"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
+              go build -o "dist/tools/$os/$arch/$name$ext" "$tool"
+          done
+          echo "built dist/tools/$os/$arch/{test2json,gotestsum}$ext"
+        done
+
   tidy:
     desc: Tidy go.mod / go.sum
     cmds:
