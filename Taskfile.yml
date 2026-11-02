@@ -1,0 +1,72 @@
+version: "3"
+
+tasks:
+  default:
+    cmds:
+      - task --list
+    silent: true
+
+  fmt:
+    desc: Format Go code (gofmt + goimports)
+    cmds:
+      - go tool golangci-lint fmt
+
+  lint:
+    desc: Lint Go code (includes go vet via golangci-lint)
+    cmds:
+      - go tool golangci-lint run ./...
+
+  test:
+    desc: Run unit and CLI tests (hermetic, no network)
+    cmds:
+      - go tool gotestsum --junitfile test-results/unit.xml -- ./...
+
+  tidy:
+    desc: Tidy go.mod / go.sum
+    cmds:
+      - go mod tidy
+
+  lint-tasks:
+    desc: Check every task the CI config invokes exists
+    cmds:
+      - |
+        set -eu
+        # Read the Taskfile rather than ask the task binary: --list output has
+        # changed between versions, and an empty answer would pass everything
+        # or fail everything.
+        defined=" $(grep -oE '^  [a-z][a-z-]*:' Taskfile.yml | tr -d ' :' | tr '\n' ' ')"
+        missing=""
+        for t in $(grep -v '^[[:space:]]*#' .circleci/config.yml \
+                   | grep -oE 'task [a-z][a-z-]*' | awk '{print $2}' | sort -u); do
+          case "$defined" in *" $t "*) ;; *) missing="$missing $t" ;; esac
+        done
+        if [ -n "$missing" ]; then
+          echo "CI config invokes tasks that do not exist:$missing" >&2
+          exit 1
+        fi
+
+  lint-mod:
+    desc: Check go.mod / go.sum are tidy
+    deps: [tidy]
+    cmds:
+      - git diff --exit-code -- go.mod go.sum
+
+  dry-run:
+    desc: Cross-compile setup-browserbase locally, without uploading
+    cmds:
+      - go tool release --name setup-browserbase --version v0.0.0-dryrun --dry-run
+
+  ci:
+    desc: Run everything CI runs (lint + test + dry-run)
+    cmds:
+      - task: lint
+      - task: lint-tasks
+      - task: test
+      - task: dry-run
+
+  publish:
+    desc: Build and publish setup-browserbase to S3 (VERSION required)
+    requires:
+      vars: [VERSION]
+    cmds:
+      - go tool release --name setup-browserbase --version "{{.VERSION}}"
