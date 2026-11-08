@@ -6,11 +6,11 @@ orbs:
 executors:
   go:
     docker:
-      - image: cimg/go:1.26
+      - image: cimg/go:1.27
   # The acceptance tests need Chrome and Node.js.
   go-browsers:
     docker:
-      - image: cimg/go:1.26-browsers
+      - image: cimg/go:1.27-browsers
   # The smoke jobs run the packaged binary and suite, so they need Chrome and
   # Node.js but no Go.
   node:
