@@ -196,8 +196,8 @@ github.com/chromedp/sysutil v1.1.0/go.mod h1:WiThHUdltqCNKGc4gaU50XgYjwjYIhKWoHG
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=
-github.com/circleci-functions/toolkit v0.4.0 h1:JP0t/4f0QIl8QZ6708ozt9ZY7QFXZCfYQFCvrhBthRU=
-github.com/circleci-functions/toolkit v0.4.0/go.mod h1:6gEu8UtCtLN3I3xmeetM2TVWn8lKm1fKDX5nFqdSk1Y=
+github.com/circleci-functions/toolkit v0.5.0 h1:8+zSZmRgeB8szS9ikvLmW6UrpUtMuRMaUGsHOFZdTf0=
+github.com/circleci-functions/toolkit v0.5.0/go.mod h1:6gEu8UtCtLN3I3xmeetM2TVWn8lKm1fKDX5nFqdSk1Y=
 github.com/ckaznocha/intrange v0.3.1 h1:j1onQyXvHUsPWujDH6WIjhyH26gkRt/txNlV7LspvJs=
 github.com/ckaznocha/intrange v0.3.1/go.mod h1:QVepyz1AkUoFQkpEqksSYpNpUo3c5W7nWh/s6SHIJJk=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=

@@ -34,12 +34,32 @@ job.
 
 Don't edit the release PR's branch: it's rewritten on every push to main.
 
+## Pre-releases
+
+To try a change before releasing it, a maintainer publishes its branch as a pre-release: in
+CircleCI, **Trigger Pipeline** on the branch with the boolean parameter `prerelease` set to
+`true`. That runs `test` and `build`, then the `publish-prerelease` job, which prints the line
+that pins it:
+
+```yaml
+functions:
+  setup-browserbase: github.com/circleci-functions/setup-browserbase@v0.1.1-0.20261103142233-abcdef123456
+```
+
+The version is a Go pseudo-version, one patch above the latest release, with the commit's time
+and hash. It never becomes the latest, `circleci function list` and `get` show it only with
+`--include-pseudo`, and it's deleted after 30 days. Triggering it again on the same commit
+publishes nothing new.
+
+Only maintainers can publish a pre-release, and only from a branch other than `main`.
+
 ## Credentials
 
 | Context | Variable | For |
 |---|---|---|
 | `github-release` | `GITHUB_TOKEN` | The release PR, the GitHub release and its tag |
 | `functions-publisher` | `FUNCTIONS_PUBLISHER_ROLE_ARN` | Publishing to the functions bucket |
+| `functions-prerelease` | `FUNCTIONS_PRERELEASE_ROLE_ARN` | Publishing pre-releases to the functions bucket |
 
 ## If a release fails part way
 
