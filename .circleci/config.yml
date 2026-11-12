@@ -3,6 +3,14 @@ version: 2.1
 orbs:
   toolkit: https://raw.githubusercontent.com/circleci-functions/toolkit/refs/heads/main/orbs/toolkit.yml
 
+parameters:
+  prerelease:
+    type: boolean
+    default: false
+    description: >-
+      Publish this branch as a pre-release instead of running the full suite
+      (see RELEASE.md). Set it when triggering a pipeline from the UI.
+
 executors:
   go:
     docker:
@@ -147,6 +155,8 @@ jobs:
 
 workflows:
   test-publish:
+    when:
+      not: << pipeline.parameters.prerelease >>
     jobs:
       - test
       - build
@@ -183,3 +193,17 @@ workflows:
           filters:
             branches:
               only: main
+
+  # Triggered by hand, so it skips the smoke jobs: the pre-release is what gets
+  # tested. Only maintainers can publish one.
+  prerelease:
+    when: << pipeline.parameters.prerelease >>
+    jobs:
+      - test
+      - build
+      - toolkit/publish-prerelease:
+          name: publish-prerelease
+          executor: go
+          cache-prefix: setup-browserbase-go
+          requires: [test, build]
+          context: [functions-prerelease]

@@ -6,7 +6,7 @@ require (
 	github.com/alecthomas/kong v1.15.0
 	github.com/chromedp/cdproto v0.0.0-20250724212937-08a3db8b4327
 	github.com/chromedp/chromedp v0.14.2
-	github.com/circleci-functions/toolkit v0.4.0
+	github.com/circleci-functions/toolkit v0.5.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	gotest.tools/v3 v3.5.2
 )
