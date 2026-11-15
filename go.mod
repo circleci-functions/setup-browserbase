@@ -1,6 +1,6 @@
 module github.com/circleci-functions/setup-browserbase
 
-go 1.26.4
+go 1.27.3
 
 require (
 	github.com/alecthomas/kong v1.15.0
