@@ -114,8 +114,7 @@ require (
 	github.com/go-xmlfmt/xmlfmt v1.1.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
-	github.com/gobwas/pool v0.2.1 // indirect
-	github.com/gobwas/ws v1.4.0 // indirect
+	github.com/gobwas/ws v1.5.0 // indirect
 	github.com/godoc-lint/godoc-lint v0.11.2 // indirect
 	github.com/gofrs/flock v0.13.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
